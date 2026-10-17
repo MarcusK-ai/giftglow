@@ -1,0 +1,9 @@
+export function todayLocal(date = new Date()) { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; }
+export function daysUntil(iso, now = new Date()) { const [y,m,d] = iso.split('-').map(Number); if (!y || !m || !d || !Number.isFinite(new Date(y,m-1,d).getTime())) return NaN; const target = Date.UTC(y,m-1,d); const base=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()); return Math.round((target-base)/86400000); }
+export function readRecords(key, storage = localStorage) { try { const value=JSON.parse(storage.getItem(key)||'[]'); return Array.isArray(value) ? value.filter(item=>item && typeof item==='object' && typeof item.id==='string') : []; } catch { return []; } }
+export function saveRecords(key,records,storage = localStorage) { storage.setItem(key,JSON.stringify(records)); }
+export function isComplete(item,type,day=todayLocal()) { return type==='daily' ? item.doneOn===day : Boolean(item.done); }
+export function sortRecords(records,type,day=todayLocal()) { return [...records].sort((a,b)=> { const aa=isComplete(a,type,day),bb=isComplete(b,type,day); if(aa!==bb) return Number(aa)-Number(bb); if(type==='dated') return String(a.date||'9999').localeCompare(String(b.date||'9999')); if(type==='daily') return String(a.time||'99:99').localeCompare(String(b.time||'99:99')); return (b.createdAt||0)-(a.createdAt||0); }); }
+export function countUpcoming(records,type,now=new Date()) { if(type==='dated') return records.filter(r=>!r.done && Number.isFinite(daysUntil(r.date,now)) && daysUntil(r.date,now)<=7).length; return records.filter(r=>!isComplete(r,type,todayLocal(now))).length; }
+export function amountTotal(records) { return records.filter(r=>!r.done).reduce((sum,r)=>sum+(Number(r.amount)||0),0); }
+export function safeId(){return typeof crypto!=='undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;}
